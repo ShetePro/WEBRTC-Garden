@@ -1,6 +1,5 @@
-import { Socket } from 'socket.io-client/build/esm/socket'
-import { User } from './user'
-import { Message } from 'postcss'
+import { Socket } from 'socket.io-client/build/esm/socket';
+import { User } from './user';
 
 // 房间 类型
 export interface RoomType {

@@ -1,7 +1,6 @@
 <template>
   <div class="room-detail rounded-md">
     <div class="room-detail-info">
-
     </div>
     <div class="room-detail-perosn">
       <h3>房间人员</h3>

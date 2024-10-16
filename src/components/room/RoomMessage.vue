@@ -38,7 +38,7 @@ onMounted(() => {
 function sendMessage () {
   // 判断是否全为空格
   if (!msgText.value.match(/^\s+$/) && msgText.value) {
-    socket && socket.emit('message', msgText.value);
+     socket?.emit('message', msgText.value);
   }
   msgText.value = '';
 }

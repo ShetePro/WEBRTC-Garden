@@ -4,13 +4,17 @@
       <div class="room-video-item">
         <video controls :id="rtcStore.user.userId"></video>
         <div>
-          <span>{{rtcStore.user.userId}}</span>
+          <span>{{ rtcStore.user.userId }}</span>
           <IconFaceSmileFill style="color: #ffcd00" />
         </div>
       </div>
-      <div class="room-video-item" v-for="(item, key) of getVideoList" :key="key">
+      <div
+        class="room-video-item"
+        v-for="(item, key) of getVideoList"
+        :key="key"
+      >
         <video controls :id="key"></video>
-        <div>{{getVideoUserName(key)}}</div>
+        <div>{{ getVideoUserName(key) }}</div>
       </div>
     </div>
     <div class="room-main">
@@ -24,63 +28,64 @@
 </template>
 
 <script setup lang="ts">
-import { useRtcStore } from '@/store'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import RoomDetail from '@/components/room/RoomDetail.vue'
-import RoomMessage from '@/components/room/RoomMessage.vue'
-import EmptyRoom from '@/components/room/EmptyRoom.vue'
-import { MultiplayerRealTime } from '@/components/media/multiplayer'
-import { Socket } from 'socket.io-client'
-import { strParse } from '@/util/util'
-import { leaveRoom } from '@/components/room/roomEvent'
-import { useJoinPeerId, getVideoUserName } from '@/hook/room'
-const rtcStore = useRtcStore()
-const socket = rtcStore.rtcSocket as Socket
-const multipVideo = ref()
+import { useRtcStore } from "@/store";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { Message } from "@arco-design/web-vue";
+import RoomDetail from "@/components/room/RoomDetail.vue";
+import RoomMessage from "@/components/room/RoomMessage.vue";
+import EmptyRoom from "@/components/room/EmptyRoom.vue";
+import { RtcPlayer } from "@/components/media/rtcPlayer.ts";
+import { Socket } from "socket.io-client";
+import { strParse } from "@/util/util";
+import { leaveRoom } from "@/components/room/roomEvent";
+import { useJoinPeerId, getVideoUserName } from "@/hook/room";
+const rtcStore = useRtcStore();
+const socket = rtcStore.rtcSocket as Socket;
+const rtcPlayer = ref<RtcPlayer>();
 const hasInRoom = computed(() => {
-  return rtcStore.currentRoom.id
-})
+  return rtcStore.currentRoom.id;
+});
 const getVideoList = computed(() => {
-  return multipVideo.value?.peerList as {key: string}
-})
+  return rtcPlayer.value?.peerList as { key: string };
+});
 
-function setRoomEvent () {
+function setRoomEvent() {
   if (socket instanceof Socket) {
-    socket.on('addUser', (id: string) => {
+    socket.on("addUser", (id: string) => {
+      console.log(id, 'addUser');
       if (id !== rtcStore.user.userId) {
-        multipVideo.value && multipVideo.value.addUser({ userId: id })
-        Message.info(`${id} 加入房间`)
+        if (rtcPlayer.value) rtcPlayer.value.addUser({ userId: id });
+        Message.info(`${id} 加入房间`);
       }
-    })
-    socket.on('roomChange', (roomStr: string) => {
-      const room = strParse(roomStr)
-      rtcStore.currentRoom = room
-    })
-    socket.on('exit', (userId: string) => {
+    });
+    socket.on("roomChange", (roomStr: string) => {
+      const room = strParse(roomStr);
+      rtcStore.currentRoom = room;
+    });
+    socket.on("exit", (userId: string) => {
       if (userId) {
-        const box = document.getElementById(userId)
-        box?.remove()
-        Message.info(`${userId} 退出房间`)
-        const peerId = useJoinPeerId(userId)
-        multipVideo.value && multipVideo.value.closePeer(peerId)
+        const box = document.getElementById(userId);
+        box?.remove();
+        Message.info(`${userId} 退出房间`);
+        const peerId = useJoinPeerId(userId);
+        if (rtcPlayer.value) rtcPlayer.value.closePeer(peerId);
       }
-    })
-    multipVideo.value = new MultiplayerRealTime()
-    multipVideo.value.init()
+    });
+    rtcPlayer.value = new RtcPlayer();
+    rtcPlayer.value.init();
   }
 }
 onUnmounted(() => {
-  rtcStore.currentRoom.id && leaveRoom(rtcStore.currentRoom.id)
+  if (rtcStore.currentRoom.id) leaveRoom(rtcStore.currentRoom.id);
   // 关闭媒体通讯
-  multipVideo.value && multipVideo.value.disconnect()
-})
+  if (rtcPlayer.value) rtcPlayer.value.disconnect();
+});
 onMounted(() => {
   if (rtcStore.currentRoom.id) {
-    setRoomEvent()
+    setRoomEvent();
   }
-  console.log(rtcStore.currentRoom, '当前的房间')
-})
+  console.log(rtcStore.currentRoom, "当前的房间");
+});
 </script>
 
 <style lang="scss" scoped>
@@ -125,9 +130,13 @@ onMounted(() => {
   }
 }
 // 控制所有video控制条旋转
-video::-webkit-media-controls-enclosure{ transform: rotateY(180deg) !important; }
+video::-webkit-media-controls-enclosure {
+  transform: rotateY(180deg) !important;
+}
 // video 时间线隐藏
-video::-webkit-media-controls-timeline{display: none !important; }
+video::-webkit-media-controls-timeline {
+  display: none !important;
+}
 
 @media screen and (max-width: 900px) {
   .room {
